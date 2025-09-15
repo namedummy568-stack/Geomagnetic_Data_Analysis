@@ -6,13 +6,25 @@ def load_geomagnetic_data(filepath):
     """Loads geomagnetic data from a CSV file."""
     return pd.read_csv(filepath)
 
-def apply_calibration(data, calibration_factors):
-    """Applies calibration factors to raw geomagnetic data."""
+def validate_data(data):
+    """Validates the geomagnetic data for missing values."""
+    if data.isnull().any().any():
+        print("Warning: Missing values detected in data.")
+    return data
+
+def apply_calibration(data, calibration_factors, offset_correction=None):
+    """Applies calibration factors and optional offset correction to raw geomagnetic data."""
     # Simulate calibration by multiplying with factors
     calibrated_data = data.copy()
     for sensor, factor in calibration_factors.items():
         if sensor in calibrated_data.columns:
             calibrated_data[sensor] = calibrated_data[sensor] * factor
+    
+    if offset_correction:
+        for sensor, offset in offset_correction.items():
+            if sensor in calibrated_data.columns:
+                calibrated_data[sensor] = calibrated_data[sensor] + offset
+                
     return calibrated_data
 
 def save_calibrated_data(data, filepath):
@@ -38,12 +50,21 @@ if __name__ == "__main__":
         'sensor_y': 0.99,
         'sensor_z': 1.02
     }
+    
+    offset_correction_values = {
+        'sensor_x': 0.5,
+        'sensor_y': -0.2,
+        'sensor_z': 0.1
+    }
 
     print(f"Loading raw data from {raw_data_path}")
     raw_data = load_geomagnetic_data(raw_data_path)
     
-    print("Applying calibration...")
-    calibrated_data = apply_calibration(raw_data, calibration_factors)
+    print("Validating data...")
+    validated_data = validate_data(raw_data)
+
+    print("Applying calibration with offset correction...")
+    calibrated_data = apply_calibration(validated_data, calibration_factors, offset_correction_values)
     
     print(f"Saving calibrated data to {output_data_path}")
     save_calibrated_data(calibrated_data, output_data_path)
